@@ -1,6 +1,3 @@
-#include "tmud.h"
-#include "logger.h"
-
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
