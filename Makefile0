@@ -1,0 +1,19 @@
+TARGET = tmud
+OBJFILES = main2.o
+
+LINKERFLAGS = -g -pthread
+COMPILERFLAGS = -Wall -std=c++11 -pthread -pipe -g
+
+LINKER = g++
+COMPILER = g++
+
+$(TARGET): $(OBJFILES)
+	$(LINKER) $(LINKERFLAGS) $(OBJFILES) -o $(TARGET)
+
+main2.o: main2.cpp
+	$(COMPILER) $(COMPILERFLAGS) -c main2.cpp
+
+.PHONY: clean
+clean:
+	rm -f $(OBJFILES)
+	rm -f $(TARGET)

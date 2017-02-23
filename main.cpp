@@ -44,11 +44,13 @@ int main(int argc, char* argv[]) {
   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
     error("ERROR: could not bind the socket to an address.\n");
   listen(sockfd, 5); // Listen for new connections.
+  std::cout << "Listening for client connections\n";
   clilen = sizeof(cli_addr);
   newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); // Accept user connection.
+  std::cout << "Accepted client connection\n";
   if (newsockfd < 0)
     error("ERROR: could not accept user connection.\n");
-  bzero(buffer, 25);
+  bzero(buffer, 255);
   n = read(newsockfd, buffer, 255); // This should read the stream of socket chars into the buffer.
   if (n < 0)
     error("ERROR: could not read from socket.\n");
