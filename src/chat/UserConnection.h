@@ -10,21 +10,14 @@ This should contain:
 
 #include "ChatBuffer.h"
 
-#include <mutex>
-#include <condition_variable>
-
 class UserConnection {
   static constexpr int BUFFERSIZE = 1024;
   char readBuffer[BUFFERSIZE];
   char sendBuffer[BUFFERSIZE];
-  CircularBuffer<std::string> inputBuffer;
-  std::mutex mutexSend;
-  std::condition_variable condVarSend;
   int sockFileDesc;
   ChatBuffer* chatPtr;
  public:
   UserConnection(int _socket, ChatBuffer* _chatPtr);
-  std::string dequeueInput();
   int getSocket(); // Gets UserConnection.sockFileDesc, not sure it is needed
   void publish(); // Publishes your sendBuffer data to the chat room
   void runListening(); // To be passed into thread: listens to user's socket
