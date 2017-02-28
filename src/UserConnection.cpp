@@ -41,38 +41,60 @@ which allows messages that a Player would see to be sent to the User.
 
 #include "UserConnection.h"
 
-UserConnection::UserConnection(int _socket, ChatBuffer* _chatPtr) :
-  sockFileDesc(_socket), chatPtr(_chatPtr) {
+UserConnection::UserConnection(int _socket, Engine& _engine) :
+  sockfd(_socket), quitSignal(false), engine(_engine) {
   bzero(readBuffer, BUFFERSIZE);
   bzero(sendBuffer, BUFFERSIZE);
 }
 
-int UserConnection::getSocket() { return sockFileDesc; }
-void UserConnection::publish() {
-  std::string published(readBuffer);
-  std::stringstream toWrite;
-  toWrite << "User " << getSocket() << ": " << published << "\n";
-  std::cout << "Calling UserConnection::publish() for socket " << getSocket()
-	    << " with string: " << toWrite.str();
-  chatPtr->publish(toWrite.str());
-}
+int UserConnection::getSocket() { return sockfd; }
+
+// void UserConnection::publish() {
+//   std::string published(readBuffer);
+//   std::stringstream toWrite;
+//   toWrite << "User " << getSocket() << ": " << published << "\n";
+//   std::cout << "Calling UserConnection::publish() for socket " << getSocket()
+// 	    << " with string: " << toWrite.str();
+//   chatPtr->publish(toWrite.str());
+// }
+
+bool UserConnection::enQCommand() { return cmdBuffer.push(std::string(readBuffer)); }
+std::string UserConnection::deQCommand() { return cmdBuffer.pop(); }
 
 void UserConnection::runListening() {
-  std::cout << "UserConnection thread runListening started for socket: " << getSocket() << "\n";
+  std::cout << "Thread runListening started for socket: " << getSocket() << "\n";
   int retFromReadSocket;
-  while (true) {
-    bzero(readBuffer, BUFFERSIZE);
-    retFromReadSocket = read(sockFileDesc, readBuffer, BUFFERSIZE - 1);
+  while (!quitSignal) {
+    retFromReadSocket = read(sockfd, readBuffer, BUFFERSIZE - 1);
     if (retFromReadSocket < 0) {
-      std::cout << "UserConnection::runListening got a bad return value from read()\n";
-      break;
+      std::cout << "runListening thread got a bad return value from read()\n"; break;
     }
-    publish();
-    if (strncmp(readBuffer, "quit", 4) == 0) break;
+    enQCommand();
   }
-  close(sockFileDesc);
+  close(sockfd);
 }
 
+// void UserConnection::runListening() {
+//   std::cout << "UserConnection thread runListening started for socket: " << getSocket() << "\n";
+//   int retFromReadSocket;
+//   while (true) {
+//     bzero(readBuffer, BUFFERSIZE);
+//     retFromReadSocket = read(sockFileDesc, readBuffer, BUFFERSIZE - 1);
+//     if (retFromReadSocket < 0) {
+//       std::cout << "UserConnection::runListening got a bad return value from read()\n";
+//       break;
+//     }
+//     publish();
+//     if (strncmp(readBuffer, "quit", 4) == 0) break;
+//   }
+//   close(sockFileDesc);
+// }
+
+void UserConnection::runSending() {
+  std::cout << "runSending thread started for socket: " << getSocket() << "\n";
+  int retFromWriteSocket;
+  // Function incomplete: to be continued by programmer-slave.
+}
 void UserConnection::runSending() {
   std::cout << "UserConnection thread runSending started for socket: " << getSocket() << "\n";
   int retFromWriteSocket;

@@ -8,27 +8,40 @@ This should contain:
 (3) the socket file descriptor for this particular user's connection
 */
 
-#include "ChatBuffer.h"
+#include "Engine.h"
+#include "../utils/CircularBuffer.hpp"
 
 #include <mutex>
 #include <condition_variable>
 
 class UserConnection {
-  static constexpr int BUFFERSIZE = 1024;
+  static constexpr int BUFFERSIZE = 2048;
+  static constexpr int CMDBUFFERSIZE = 32;
+  static constexpr int OUTPUTBUFFERSIZE = 256;
+  CircularBuffer<std::string, CMDBUFFERSIZE> cmdBuffer;
+  CircularBuffer<std::string, OUTPUTBUFFERSIZE> outBuffer;
+  // output should work like this: the Engine has a collection of Players,
+  // each with their own buffered output-to-user strings, called "echoes".
+  // the Sending Thread should block waiting until notified to clear that buffer.
+  // To clear the buffer, stream each string into a stringstream, delimited by newlines.
+  // Ensure that you NEVER exceed 2048 characters, or you WILL OVERFLOW the sendBuffer.
+  // Concurrency issue can appear here: maybe change the CircularBuffer to be concurrent?
   char readBuffer[BUFFERSIZE];
   char sendBuffer[BUFFERSIZE];
-  CircularBuffer<std::string> inputBuffer;
   std::mutex mutexSend;
   std::condition_variable condVarSend;
-  int sockFileDesc;
-  ChatBuffer* chatPtr;
+  int sockfd;
+  bool quitSignal;
+  Engine& engine;
+  bool enQCommand(); // Add new command to the CircularBuffer queue
+  // Add Engine's shutdown signal as a friend function here
  public:
-  UserConnection(int _socket, ChatBuffer* _chatPtr);
-  std::string dequeueInput();
+  UserConnection(int _socket, Engine& _engine);
   int getSocket(); // Gets UserConnection.sockFileDesc, not sure it is needed
-  void publish(); // Publishes your sendBuffer data to the chat room
+  // void publish(); // Publishes your sendBuffer data to the chat room
   void runListening(); // To be passed into thread: listens to user's socket
   void runSending(); // To be passed into thread: writes to user's socket
+  std::string deQCommand(); // Extract a command from the CircularBuffer queue
 };
 
 #endif

@@ -38,7 +38,7 @@ void Server::addNewConnection(int _sockFileDesc, int _conn) {
   clientReadThreads.push_back(std::thread(&UserConnection::runListening, &clientConnections[_conn]));
   // clientReadThreads.push_back(std::thread(clientConnections[_conn].runListening));
   std::cout << "Spawned thread runListening on connection #" << _conn << "\n";
-  clientReadThreads.push_back(std::thread(&UserConnection::runSending, &clientConnections[_conn]));
+  clientSendThreads.push_back(std::thread(&UserConnection::runSending, &clientConnections[_conn]));
   // clientSendThreads.push_back(std::thread(clientConnections[_conn].runSending));
   std::cout << "Spawned thread runSending on connection #" << _conn << "\n";  
 }
