@@ -29,20 +29,23 @@ the Player and disconnect the user.
 
 class ConnectionManager {
   static constexpr int BACKLOG = 16;
-  std::vector<UserConnection> userConns;
   std::vector<std::thread> userSendThreads;
   std::vector<std::thread> userReadThreads;
+  std::unordered_map<int, UserConnection> userConns;
   int sockfd;
   int port;
   socklen_t sockLen;
   struct sockaddr_in bindAddress, acceptAddress;
   Engine* engine;
-  void addNewConnection(int _sockFileDesc, int _conn);
+  bool isShutdown;
+  int numConns;
+  void addNewConnection(int _sock);
   ConnectionManager(); // Default constructor should never be called
  public:
   ConnectionManager(int _port, Engine* _engine);
   ~ConnectionManager();
   void run();
+  bool removeConnection(int _sock);
 };
 
 #endif

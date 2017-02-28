@@ -1,0 +1,8 @@
+To implement
+
+
+Implement ConnectionManager using hashmap (unordered_map) where key/value are
+sockFD/UserConnection.
+
+Google to verify that socket file descriptors tend to be hashable.
+

@@ -3,7 +3,7 @@
 ChatBuffer::ChatBuffer() : msg("") {}
 
 void ChatBuffer::publish(std::string _msg) {
-  std::lock_guard<std::mutex>(mutexPublish, std::adopt_lock);
+  std::lock_guard<std::mutex> lock1(mutexPublish, std::adopt_lock);
   msg = _msg;
   condVarRead.notify_all();
 }

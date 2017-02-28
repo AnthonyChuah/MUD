@@ -2,6 +2,8 @@
 given that the object has a copy constructor
 */
 
+#include <mutex>
+
 template <typename T, int Size>
 class CircularBuffer {
   T* head;
@@ -9,14 +11,11 @@ class CircularBuffer {
   T* endOfBuffer;
   T buffer[Size];
   int numel;
+  std::mutex mutexWrite;
 public:
-  CircularBuffer() {
-    head = buffer;
-    tail = buffer;
-    endOfBuffer = buffer + Size;
-    numel = 0;
-  }
+  CircularBuffer() : head(buffer), tail(buffer), endOfBuffer(buffer + Size), numel(0) {}
   T pop() {
+    std::lock_guard<std::mutex> lock1(mutexWrite, std::adopt_lock);
     if (head == tail) {
       // Warning: CircularBuffer should NOT be popped when empty!
       return *head;
@@ -27,6 +26,7 @@ public:
     return returned;
   }
   bool push(T _toPush) {
+    std::lock_guard<std::mutex> lock1(mutexWrite, std::adopt_lock);
     bool isFullBufferWrapAround = (head == buffer) && (tail == endOfBuffer - 1);
     bool isFullBuffer = head == tail + 1 || isFullBufferWrapAround;
     if (isFullBuffer) return false;
