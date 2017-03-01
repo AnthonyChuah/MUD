@@ -29,18 +29,21 @@ class UserConnection {
   char readBuffer[BUFFERSIZE];
   char sendBuffer[BUFFERSIZE];
   std::mutex mutexSend;
-  std::condition_variable condVarSend;
+  std::condition_variable condvarSend;
   int sockfd;
-  bool quitSignal;
+  bool isQuit;
   Engine& engine;
   bool enQCommand(); // Add new command to the CircularBuffer queue
   // Add Engine's shutdown signal as a friend function here
+  void loadSendBuffer(); // Loads the sendBuffer from the outBuffer queue of strings
  public:
   UserConnection(int _socket, Engine& _engine);
+  ~UserConnection();
   int getSocket(); // Gets UserConnection.sockFileDesc, not sure it is needed
   // void publish(); // Publishes your sendBuffer data to the chat room
   void runListening(); // To be passed into thread: listens to user's socket
   void runSending(); // To be passed into thread: writes to user's socket
+  void notifySendThread(); // Triggers the sending thread to send buffered output to user
   std::string deQCommand(); // Extract a command from the CircularBuffer queue
 };
 

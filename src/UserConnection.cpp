@@ -47,6 +47,10 @@ UserConnection::UserConnection(int _socket, Engine& _engine) :
   bzero(sendBuffer, BUFFERSIZE);
 }
 
+UserConnection::~UserConnection() {
+  close(sockfd); // Erase from hashmap of UCs means that socket will close in destructor
+}
+
 int UserConnection::getSocket() { return sockfd; }
 
 // void UserConnection::publish() {
@@ -71,7 +75,6 @@ void UserConnection::runListening() {
     }
     enQCommand();
   }
-  close(sockfd);
 }
 
 // void UserConnection::runListening() {
@@ -93,22 +96,49 @@ void UserConnection::runListening() {
 void UserConnection::runSending() {
   std::cout << "runSending thread started for socket: " << getSocket() << "\n";
   int retFromWriteSocket;
-  // Function incomplete: to be continued by programmer-slave.
-}
-void UserConnection::runSending() {
-  std::cout << "UserConnection thread runSending started for socket: " << getSocket() << "\n";
-  int retFromWriteSocket;
-  std::string toSend;
-  while (true) {
-    bzero(sendBuffer, BUFFERSIZE);
-    std::cout << "UserConnection SendThread socket " << getSocket() << " blocks waiting to read.\n";
-    toSend = chatPtr->readMessage();
-    strcpy(sendBuffer, toSend.c_str());
-    retFromWriteSocket = write(sockFileDesc, sendBuffer, BUFFERSIZE);
-    if (retFromWriteSocket < 0) {
-      std::cout << "UserConnection:runSending got a bad return value from send()\n"
-		<< "If this happened right after user has quit, it is normal.\n";
-      break;
+  while (!isQuit) {
+    while (outBuffer.getNumel() == 0) {
+      std::unique_lock<std::mutex> lock1(mutexSend);
+      condvarSend.wait(lock1);
     }
+    loadSendBuffer();
+    retFromWriteSocket = write(sockfd, sendBuffer, BUFFERSIZE);
   }
 }
+
+bool UserConnection::pushSendQ(std::string _toPush) {
+  return outBuffer.push(_toPush);
+}
+
+void UserConnection::notifySendThread() {
+  condvarSend.notify_all();
+}
+
+void UserConnection::loadSendBuffer() {
+  bzero(sendBuffer, BUFFERSIZE);
+  std::stringstream ss;
+  for (int i = outBuffer.getNumel(); i > 0; --i) {
+    ss << outBuffer.pop();
+  }
+  // Now the Engine should ensure that you never overflow the output buffer.
+  // So I do not explicitly check it here! Programmer beware.
+  strcpy(sendBuffer, ss.str().c_str());
+}
+
+// void UserConnection::runSending() {
+//   std::cout << "UserConnection thread runSending started for socket: " << getSocket() << "\n";
+//   int retFromWriteSocket;
+//   std::string toSend;
+//   while (true) {
+//     bzero(sendBuffer, BUFFERSIZE);
+//     std::cout << "UserConnection SendThread socket " << getSocket() << " blocks waiting to read.\n";
+//     toSend = chatPtr->readMessage();
+//     strcpy(sendBuffer, toSend.c_str());
+//     retFromWriteSocket = write(sockFileDesc, sendBuffer, BUFFERSIZE);
+//     if (retFromWriteSocket < 0) {
+//       std::cout << "UserConnection:runSending got a bad return value from send()\n"
+// 		<< "If this happened right after user has quit, it is normal.\n";
+//       break;
+//     }
+//   }
+// }

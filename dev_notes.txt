@@ -4,5 +4,48 @@ To implement
 Implement ConnectionManager using hashmap (unordered_map) where key/value are
 sockFD/UserConnection.
 
-Google to verify that socket file descriptors tend to be hashable.
+Google to verify that socket file descriptors tend to be hashable. Yes it's safe.
 
+
+The runListening thread can potentially block waiting listening on a socket while the Engine
+has already sent the shutdown signal. This means the runSending thread will terminate but
+the runListening thread will block indefinitely. That's bad. How to handle?
+
+One way would be to block waiting on the Engine to signal that it has parsed all the commands
+Only after the Engine parses all the commands can the runListening thread proceed to attempt to
+read from the socket again.
+
+What happens when a std::thread object goes out of scope? Does it die?
+
+If it's possible to explicitly kill threads, maybe keep the threads in a hashmap too.
+
+FURTHERMORE, FORGOT TO THINK: the runListening thread should KILL ITSELF if the user sends quit.
+Why do it there instead of upon Engine's signal? Because the thread will BLOCK WAITING on the
+socket read(). So we must kill it upon reading a quit, instead of allowing it to race ahead to
+the next loop iteration and blocking waiting on the socket.
+
+Of course, if the socket is forcibly closed then the attempt to read() will simply fail... which
+means that the thread will just die after the shutdown signal. So maybe no need.
+
+
+Main parent thread should first set up the Engine, make sure everything is initialized nicely,
+then launch the Engine thread and then set up the ConnectionManager. The main thread will be
+in the connection manager, so it is the LAST thing that is destructed whenever the server is
+shut down.
+
+The Engine thread should have an internal clock cycle. Every 100 ms you should clear all the
+input buffers, process the commands, run everything, push into all the output buffers, then
+clear all the output buffers by writing to the user.
+
+Engine should have a vector of Player objects. Each Player corresponds to one UserConnection.
+Engine needs to:
+(1) Send shutdown signal to UserConnection threads
+(2) Populate the sending (circular buffers) queues for each User and trigger sending
+(3) Send shutdown signal to ConnectionManager thread to remove user from its hashmap
+
+OK THINK ABOUT HOW ENGINE SHOULD HANDLE PLAYER VS USERCONNECTION.
+
+Each cycle, I need to buffer all the user's commands into a queue.
+Now not all the commands will go through: it really depends on what he's doing.
+Every command should take at a MINIMUM 1 cycle to process.
+Every relevant action should take 1 round at least.
