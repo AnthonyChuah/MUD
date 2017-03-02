@@ -30,11 +30,13 @@ class UserConnection {
   char sendBuffer[BUFFERSIZE];
   std::mutex mutexSend;
   std::condition_variable condvarSend;
+  int connNum;
   int sockfd;
   bool isQuit;
   Engine& engine;
   bool enQCommand(); // Add new command to the CircularBuffer queue
   // Add Engine's shutdown signal as a friend function here
+  // Add Engine's deQing of cmdBuffer as a friend function here
   void loadSendBuffer(); // Loads the sendBuffer from the outBuffer queue of strings
  public:
   UserConnection(int _socket, Engine& _engine);

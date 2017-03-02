@@ -4,7 +4,7 @@
 #include <iostream>
 #include <unistd.h>
 
-ConnectionManager::ConnectionManager(int _port, Engine* _engine) :
+ConnectionManager::ConnectionManager(int _port, Engine& _engine) :
   port(_port), engine(_engine), isShutdown(false), numConns(0) {
   sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (sockfd < 0) {
@@ -25,23 +25,29 @@ ConnectionManager::ConnectionManager(int _port, Engine* _engine) :
 }
 
 ConnectionManager::~ConnectionManager() {
-  close(sockfd);
-  int numThreads = userConns.size();
+  for (auto i = userConns.begin(); i != userConns.end(); ++i) {
+    delete i;
+    userConns.remove(i);
+  }
+  closeSocket();
   for (auto i = userSendThreads.begin(); i != userSendThreads.end(); ++i)
-    i->join();
+    i->join(); // Once UCs out of scope (delete), their threads should end and join this
   for (auto i = userReadThreads.begin(); i != userReadThreads.end(); ++i)
     i->join();
 }
 
 bool ConnectionManager::addNewConnection(int _sock) {
   std::cout << "Accepted new connection on socket #" << _sock << "\n";
-  userConns.emplace(std::make_pair<int, UserConnection>(_sock, UserConnection(_sock, &engine)));
+  UserConnection* newConn;
+  userConns.emplace(std::make_pair<int, UserConnection*>(_sock, newConn));
+  userConns[_sock] = new UserConnection(_sock, engine);
   // I do not take the iterator returned by emplace to spawn threads, because it may trigger a
   // re-hash of the hashmap, which means that the iterator will no longer be valid.
   auto it = userConn.find(_sock); // it is an iterator
   if (it == userConn.end()) {
     std::cout << "STL hashmap did not contain the inserted key! Abort...\n"; return false;
   }
+  engine.addNewConnection(it);
   std::cout << "Spawned a user-listening thread for socket #" << _sock << "\n";
   userReadThreads.push_back(std::thread(&UserConnection::runListening, it));
   std::cout << "Spawned a user-sending thread for socket #" << _sock << "\n";
@@ -52,8 +58,10 @@ bool ConnectionManager::addNewConnection(int _sock) {
 
 bool ConnectionManager::removeConnection(int _sock) {
   std::cout << "Removing connection corresponding to socket #" << _sock << "\n";
+  delete userConns[_sock];
   userConns.erase(_sock);
   --numConns;
+  // When a connection is removed, the thread dies, but does not join() until CM dies
 }
 
 void ConnectionManager::run() {
@@ -64,3 +72,5 @@ void ConnectionManager::run() {
     addNewConnection(newSockFD) ? break : ;
   }
 }
+
+void ConnectionManager::closeSocket() { close(sockfd); }

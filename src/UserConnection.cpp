@@ -42,7 +42,7 @@ which allows messages that a Player would see to be sent to the User.
 #include "UserConnection.h"
 
 UserConnection::UserConnection(int _socket, Engine& _engine) :
-  sockfd(_socket), quitSignal(false), engine(_engine) {
+  sockfd(_socket), isQuit(false), engine(_engine) {
   bzero(readBuffer, BUFFERSIZE);
   bzero(sendBuffer, BUFFERSIZE);
 }

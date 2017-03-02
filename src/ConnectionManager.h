@@ -33,12 +33,13 @@ class ConnectionManager {
   static constexpr int MAXUSERS = 64;
   std::vector<std::thread> userSendThreads;
   std::vector<std::thread> userReadThreads;
-  std::unordered_map<int, UserConnection> userConns;
+  // std::vector<UserConnection> userConns;
+  std::unordered_map<int, UserConnection*> userConns;
   int sockfd;
   int port;
   socklen_t sockLen;
   struct sockaddr_in bindAddress, acceptAddress;
-  Engine* engine;
+  Engine& engine;
   bool isShutdown;
   int numConns;
   bool addNewConnection(int _sock);
@@ -47,6 +48,7 @@ class ConnectionManager {
   ConnectionManager(int _port, Engine* _engine);
   ~ConnectionManager();
   void run();
+  void closeSocket();
   bool removeConnection(int _sock);
 };
 

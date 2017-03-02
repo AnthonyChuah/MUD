@@ -13,15 +13,20 @@ class Engine {
   unsigned long long timeSinceStart = 0;
   unsigned int cyclesToNextRound = CYCLES_IN_ROUND - 1;
   unsigned int roundsToNextTick = ROUNDS_IN_TICK - 1;
-  std::vector<UserConnection*> userConns;
+  std::vector<UserConnection*> userConns; // Vector holding pointers to UCs on the heap
+  std::vector<Character> userChars; // Vector holding the logged-in entites of the user
+  std::vector<int> userDelayToNextCommand; // To prevent spam, each command gives at least 1
+  // cycle of "delay".
   ConnectionManager* connManager;
   // All other objects necessary, e.g. locations and people and such
   void executeCycle(); // Executes every 100 ms
   void executeRound(); // Executes every 10 cycles
   void executeTick(); // Executes every 10 rounds
-  Engine(); // Default constructor not to be used
  public:
-  Engine();
+  Engine(); // Since initialized first, attach pointers post-construction
+  void attachConnectionManager(ConnectionManager* _cm);
+  void addNewConnection(UserConnection* _conn);
+  void shutdownUserConn(int _socket);
   void start();
 };
 

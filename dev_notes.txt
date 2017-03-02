@@ -49,3 +49,12 @@ Each cycle, I need to buffer all the user's commands into a queue.
 Now not all the commands will go through: it really depends on what he's doing.
 Every command should take at a MINIMUM 1 cycle to process.
 Every relevant action should take 1 round at least.
+
+
+Another major problem:
+
+If I store user connections in a hashmap, whenever a re-hash happens the address of the
+UCs may change. This means the pointers that were received by the Engine would become invalid.
+Should I re-assign pointers after every re-hash? Seems unnecessary.
+What about I eat the performance penalty of mediating all access to UCs through the Connection
+Manager.
