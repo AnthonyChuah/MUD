@@ -100,8 +100,8 @@ void UserConnection::runSending() {
     while (outBuffer.getNumel() == 0) {
       std::unique_lock<std::mutex> lock1(mutexSend);
       condvarSend.wait(lock1);
+      loadSendBuffer();
     }
-    loadSendBuffer();
     retFromWriteSocket = write(sockfd, sendBuffer, BUFFERSIZE);
   }
 }
