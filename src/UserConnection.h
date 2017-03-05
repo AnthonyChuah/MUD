@@ -32,19 +32,19 @@ class UserConnection {
   std::condition_variable condvarSend;
   int connNum;
   int sockfd;
-  bool isQuit;
-  Engine& engine;
+  bool isQuit = false;
   bool enQCommand(); // Add new command to the CircularBuffer queue
-  // Add Engine's shutdown signal as a friend function here
-  // Add Engine's deQing of cmdBuffer as a friend function here
+  friend void Engine::shutdownUserConn(UserConnection* _conn);
+  friend void Engine::getUserNextCmd(UserConnection* _conn, const int& _index);
   void loadSendBuffer(); // Loads the sendBuffer from the outBuffer queue of strings
  public:
-  UserConnection(int _socket, Engine& _engine);
+  UserConnection(int _socket);
   ~UserConnection();
   int getSocket(); // Gets UserConnection.sockFileDesc, not sure it is needed
   // void publish(); // Publishes your sendBuffer data to the chat room
   void runListening(); // To be passed into thread: listens to user's socket
   void runSending(); // To be passed into thread: writes to user's socket
+  bool pushSendQ(std::string _toPush); // Push into the outBuffer
   void notifySendThread(); // Triggers the sending thread to send buffered output to user
   std::string deQCommand(); // Extract a command from the CircularBuffer queue
 };

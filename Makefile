@@ -1,5 +1,5 @@
-TARGET = oomud
-OBJFILES = main3.o ChatBuffer.o UserConnection.o Server.o
+TARGET = mud
+OBJFILES = main4.o UserConnection.o ConnectionManager.o Engine.o
 
 LINKERFLAGS = -g -pthread
 COMPILERFLAGS = -Wall -std=c++11 -pthread -pipe -g
@@ -10,17 +10,17 @@ COMPILER = g++
 $(TARGET): $(OBJFILES)
 	$(LINKER) $(LINKERFLAGS) $(OBJFILES) -o $(TARGET)
 
-ChatBuffer.o: src/ChatBuffer.cpp src/ChatBuffer.h
-	$(COMPILER) $(COMPILERFLAGS) -c src/ChatBuffer.cpp
-
-UserConnection.o: src/UserConnection.cpp src/UserConnection.h src/ChatBuffer.cpp src/ChatBuffer.h
+UserConnection.o: src/UserConnection.cpp src/UserConnection.h
 	$(COMPILER) $(COMPILERFLAGS) -c src/UserConnection.cpp
 
-Server.o: src/Server.cpp src/Server.h src/UserConnection.h src/UserConnection.cpp src/ChatBuffer.h src/ChatBuffer.cpp
-	$(COMPILER) $(COMPILERFLAGS) -c src/Server.cpp
+ConnectionManager.o: src/ConnectionManager.cpp src/ConnectionManager.h src/UserConnection.h src/Engine.h
+	$(COMPILER) $(COMPILERFLAGS) -c src/ConnectionManager.cpp
 
-main3.o: main3.cpp src/Server.h src/Server.cpp
-	$(COMPILER) $(COMPILERFLAGS) -c main3.cpp
+Engine.o: src/Engine.cpp src/Engine.h src/UserConnection.h src/ConnectionManager.h
+	$(COMPILER) $(COMPILERFLAGS) -c src/Engine.cpp
+
+main4.o: main4.cpp src/UserConnection.h src/ConnectionManager.h src/Engine.h
+	$(COMPILER) $(COMPILERFLAGS) -c main4.cpp
 
 .PHONY: clean
 clean:

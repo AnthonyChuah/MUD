@@ -28,6 +28,9 @@ If the user attempts to overflow the command buffer, send a signal to Engine to 
 the Player and disconnect the user.
 */
 
+class UserConnection;
+class Engine;
+
 class ConnectionManager {
   static constexpr int BACKLOG = 16;
   static constexpr int MAXUSERS = 64;
@@ -37,19 +40,20 @@ class ConnectionManager {
   std::unordered_map<int, UserConnection*> userConns;
   int sockfd;
   int port;
-  socklen_t sockLen;
+  socklen_t socketLen;
   struct sockaddr_in bindAddress, acceptAddress;
   Engine& engine;
-  bool isShutdown;
-  int numConns;
+  bool isShutdown = false;
+  int numConns = 0;
   bool addNewConnection(int _sock);
   ConnectionManager(); // Default constructor should never be called
  public:
-  ConnectionManager(int _port, Engine* _engine);
+  ConnectionManager(int _port, Engine& _engine);
   ~ConnectionManager();
+  int getNumConns();
   void run();
   void closeSocket();
-  bool removeConnection(int _sock);
+  void removeConnection(int _sock);
 };
 
 #endif
