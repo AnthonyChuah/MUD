@@ -70,7 +70,7 @@ void ConnectionManager::run() {
   while (!isShutdown) {
     newSockFD = accept(sockfd, (struct sockaddr*) &acceptAddress, &socketLen);
     if (newSockFD < 0) { std::cout << "WARNING: could not accept a user connection\n"; break; }
-    if (addNewConnection(newSockFD)) break;
+    if (!addNewConnection(newSockFD)) break;
   }
 }
 

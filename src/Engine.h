@@ -35,7 +35,7 @@ class Engine {
   void executeCycle(); // Executes every 100 ms
   void executeRound(); // Executes every 10 cycles
   void executeTick(); // Executes every 10 rounds
-  int parseUserInput(std::string&& _cmd, UserConnection* _conn);
+  int parseUserInput(std::string _cmd, UserConnection* _conn);
   // The two functions below work concurrently together to execute cycle every 100 ms real-time
   void blockingCycleExecutor();
   void unblockingClock();

@@ -52,28 +52,40 @@ UserConnection::~UserConnection() {
 
 int UserConnection::getSocket() { return sockfd; }
 
-bool UserConnection::enQCommand() { return cmdBuffer.push(std::string(readBuffer)); }
+bool UserConnection::enQCommand() {
+  std::string cmd(readBuffer);
+  std::cout << "Enqueueing cmd into cmdBuffer: " << cmd;
+  // To parse multiple line input by users, you should split the string by newline
+  // Then insert each line separately into the cmdBuffer
+  return cmdBuffer.push(cmd);
+}
 std::string UserConnection::deQCommand() { return cmdBuffer.pop(); }
 
 void UserConnection::runListening() {
-  std::cout << "Thread runListening started for socket: " << getSocket() << "\n";
+  std::cout << "runListening thread started for socket: " << sockfd << "\n";
   int retFromReadSocket;
   while (!isQuit) {
     retFromReadSocket = read(sockfd, readBuffer, BUFFERSIZE - 1);
     if (retFromReadSocket < 0) {
       std::cout << "runListening thread got a bad return value from read()\n"; break;
     }
-    enQCommand();
+    if (!enQCommand()) {
+      std::cout << "enQCommand() returned false, buffer full. Kick user out.\n";
+      isQuit = true;
+    }
   }
+  std::cout << "Thread UC::runListening() has ended.\n";
 }
 
 void UserConnection::runSending() {
   std::cout << "runSending thread started for socket: " << getSocket() << "\n";
   int retFromWriteSocket;
   while (!isQuit) {
-    while (outBuffer.getNumel() == 0) {
+    {
       std::unique_lock<std::mutex> lock1(mutexSend);
+      std::cout << "Locked waiting on the send mutex\n";
       condvarSend.wait(lock1);
+      std::cout << "Woke and unlocked waiting on the send mutex\n";
       loadSendBuffer();
     }
     retFromWriteSocket = write(sockfd, sendBuffer, BUFFERSIZE);
@@ -81,9 +93,11 @@ void UserConnection::runSending() {
       std::cout << "runSending thread got a bad return value from write()\n"; break;
     }
   }
+  std::cout << "Thread UC::runSending() has ended.\n";
 }
 
 bool UserConnection::pushSendQ(std::string _toPush) {
+  std::cout << "UC::pushSendQ with string: " << _toPush;
   return outBuffer.push(_toPush);
 }
 
