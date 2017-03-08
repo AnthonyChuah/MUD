@@ -20,7 +20,7 @@ public:
       // Warning: CircularBuffer should NOT be popped when empty!
       return *head;
     }
-    T returned = *(head++);
+    T returned = *head; ++head;
     if (head == endOfBuffer) head = buffer;
     --numel;
     return returned;
@@ -28,9 +28,9 @@ public:
   bool push(T _toPush) {
     std::lock_guard<std::mutex> lock1(mutexWrite, std::adopt_lock);
     bool isFullBufferWrapAround = (head == buffer) && (tail == endOfBuffer - 1);
-    bool isFullBuffer = head == tail + 1 || isFullBufferWrapAround;
+    bool isFullBuffer = (head == tail + 1) || isFullBufferWrapAround;
     if (isFullBuffer) return false;
-    *tail++ = _toPush;
+    *tail = _toPush; ++tail;
     if (tail == endOfBuffer) tail = buffer;
     ++numel;
     return true;

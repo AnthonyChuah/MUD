@@ -27,6 +27,9 @@ void Engine::executeCycle() {
     if (userDelayToNextCommand[i] == 0) {
       getUserNextCmd(userConns[i], i);
     }
+    if (userDelayToNextCommand[i] > 0) {
+      --userDelayToNextCommand[i];
+    }
   }
   ++timeSinceStart;
   if (--cyclesToNextRound == 0) {
@@ -64,6 +67,7 @@ int Engine::parseUserInput(std::string _cmd, UserConnection* _conn) {
   std::string toWrite = ss.str();
   std::cout << "User string toWrite is: " << toWrite;
   for (auto i = userConns.begin(); i != userConns.end(); ++i) {
+    std::cout << "Writing to a given user: " << (*i)->getSocket() << "\n";
     (*i)->pushSendQ(toWrite);
     (*i)->notifySendThread();
   }
