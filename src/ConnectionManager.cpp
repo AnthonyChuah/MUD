@@ -62,7 +62,7 @@ void ConnectionManager::removeConnection(int _sock) {
   delete userConns[_sock];
   userConns.erase(_sock);
   --numConns;
-  // When a connection is removed, the thread dies, but does not join() until CM dies
+  // When a connection is removed, the thread dies
 }
 
 void ConnectionManager::run() {

@@ -66,6 +66,7 @@ void UserConnection::runListening() {
   int retFromReadSocket;
   while (!isQuit) {
     bzero(readBuffer, BUFFERSIZE);
+    std::cout << "UC::runListening block waiting on socket\n";
     retFromReadSocket = read(sockfd, readBuffer, BUFFERSIZE - 1);
     if (retFromReadSocket < 0) {
       std::cout << "runListening thread got a bad return value from read()\n"; break;

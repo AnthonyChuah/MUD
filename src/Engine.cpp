@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 #include <sstream>
+#include <algorithm>
 
 Engine::Engine() {
   userConns.reserve(RESERVE_CAPACITY);
@@ -71,12 +72,21 @@ int Engine::parseUserInput(std::string _cmd, UserConnection* _conn) {
     (*i)->pushSendQ(toWrite);
     (*i)->notifySendThread();
   }
-  if (_cmd == "quit") shutdownUserConn(_conn);
+  if (_cmd.substr(4) == "quit") shutdownUserConn(_conn);
   return 1; // Minimum delay of a command
 }
 
 void Engine::shutdownUserConn(UserConnection* _conn) {
+  // First, remove _conn from vector<UC*> userConns and vector<int> userDelay...
+  std::vector<UserConnection*>::iterator it = std::find(userConns.begin(), userConns.end(), _conn);
+  size_t index = std::distance(userConns.begin(), it);
+  // O(1) way of popping from vector: just std::swap with back() and then pop_back.
+  // But this leads to unpredictable order of parsing commands, so let's keep the inefficient way.
+  userDelayToNextCommand.erase(userDelayToNextCommand.begin() + index);
+  userConns.erase(userConns.begin() + index);
   _conn->isQuit = true;
+  int socket = _conn->getSocket();
+  connManager->removeConnection(socket);
 }
 
 void Engine::start() {
