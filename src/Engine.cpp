@@ -45,12 +45,12 @@ void Engine::executeCycle() {
 
 void Engine::executeRound() {
   // Do nothing for now: to be added in the future
-  std::cout << "Round happened. timeSinceStart: " << timeSinceStart << "\n";
+  // std::cout << "Round happened. timeSinceStart: " << timeSinceStart << "\n";
 }
 
 void Engine::executeTick() {
   // Do nothing for now: to be added in the future
-  std::cout << "Tick happened! timeSinceStart: " << timeSinceStart << "\n";
+  // std::cout << "Tick happened! timeSinceStart: " << timeSinceStart << "\n";
 }
 
 void Engine::getUserNextCmd(UserConnection* _conn, const int& _index) {
@@ -72,11 +72,12 @@ int Engine::parseUserInput(std::string _cmd, UserConnection* _conn) {
     (*i)->pushSendQ(toWrite);
     (*i)->notifySendThread();
   }
-  if (_cmd.substr(4) == "quit") shutdownUserConn(_conn);
+  if (_cmd.length() >= 4 && _cmd.substr(0, 4) == "quit") shutdownUserConn(_conn);
   return 1; // Minimum delay of a command
 }
 
 void Engine::shutdownUserConn(UserConnection* _conn) {
+  std::cout << "Shutting down user connection: " << _conn->getSocket() << "\n";
   // First, remove _conn from vector<UC*> userConns and vector<int> userDelay...
   std::vector<UserConnection*>::iterator it = std::find(userConns.begin(), userConns.end(), _conn);
   size_t index = std::distance(userConns.begin(), it);
