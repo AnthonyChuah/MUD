@@ -59,6 +59,7 @@ bool ConnectionManager::addNewConnection(int _sock) {
 
 void ConnectionManager::removeConnection(int _sock) {
   std::cout << "Removing connection corresponding to socket #" << _sock << "\n";
+  userConns[_sock]->notifySendThread(); // This should make client disconnect
   delete userConns[_sock];
   userConns.erase(_sock);
   --numConns;

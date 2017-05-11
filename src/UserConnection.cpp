@@ -74,6 +74,7 @@ void UserConnection::runListening() {
     if (!enQCommand()) {
       std::cout << "enQCommand() returned false, buffer full. Kick user out.\n";
       isQuit = true;
+      
     }
   }
   std::cout << "Thread UC::runListening() has ended.\n";
@@ -108,10 +109,15 @@ void UserConnection::notifySendThread() {
 }
 
 void UserConnection::loadSendBuffer() {
+  int numSends = outBuffer.getNumel();
   bzero(sendBuffer, BUFFERSIZE);
   std::stringstream ss;
-  for (int i = outBuffer.getNumel(); i > 0; --i) {
-    ss << outBuffer.pop();
+  if (isQuit) {
+    ss << "Goodbye! See you again soon.\n";
+  } else {
+    for (int i = numSends; i > 0; --i) {
+      ss << outBuffer.pop();
+    }
   }
   // Now the Engine should ensure that you never overflow the output buffer.
   // So I do not explicitly check it here! Programmer beware.
