@@ -1,6 +1,19 @@
 To implement
 
 
+Needs revamping:
+
+1. Don't use raw new/delete, use unique_ptr instead. Each connection has only one owner and does not need to transfer ownership so I don't even need to worry about moving.
+
+2. Don't use std::unordered_map to hold the objects: not cache-friendly and unnecessary. Keep them in a vector instead, and if I need lookup-by-name I can make a hashmap of pointers. The vector will probably need some kind of flag for connectors who have logged off, and we don't want to force a delete in the middle of the vector. Probably safe to assume that there won't ever come a point where there are disproportionately (>100-to-1) old logins, since MUD servers don't tend to stay up for massively long times. At least mine won't.
+
+3. Consider thread priorities: the central engine should have the highest priority and be pinned to a dedicated core. Probably okay to set all connection threads to the other core, I'm not planning to run this on a big server.
+
+4. Examine again the socket-closing: ensure that nothing tries to use the socket after it is shut down.
+
+5. Make a special admin login that can manipulate the server (kicking users, shutting down, etc.).
+
+
 Implement ConnectionManager using hashmap (unordered_map) where key/value are
 sockFD/UserConnection.
 
