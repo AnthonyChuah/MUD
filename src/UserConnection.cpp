@@ -32,10 +32,11 @@ which allows messages that a Player would see to be sent to the User.
 
 */
 
-#include <string>
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <string>
+
 #include <unistd.h>
 
 #include "UserConnection.h"
@@ -50,7 +51,6 @@ UserConnection::UserConnection(int socket) :
 UserConnection::~UserConnection()
 {
     _listeningThread.join();
-    close(_sockfd);
 }
 
 const std::string UserConnection::PopCommand() { return _cmdQueue.pop(); }
@@ -60,6 +60,10 @@ void UserConnection::Run()
     int socketReturn;
     while (!_isQuit)
     {
+        struct timeval timeout;
+        timeout.tv_sec = 300; timeout.tv_usec = 0;
+        setsockopt(_sockfd, SOL_SOCKET, SO_RCVTIMEO,
+                   static_cast<const char*>(&timeout), sizeof(struct timeval));
         socketReturn = read(_sockfd, _readBuffer, BUFFERSIZE - 1); // blocks here
         if (retFromReadSocket < 0)
         {
@@ -73,6 +77,7 @@ void UserConnection::Run()
         }
         bzero(_readBuffer, BUFFERSIZE);
     }
+    close(_sockfd);
 }
 
 // SendOutputToUser will empty the output queue and write to socket
@@ -80,14 +85,15 @@ void UserConnection::SendOutputToUser()
 {
     if (_isQuit)
     {
-        ss << "User disconnected. Goodbye!";
-        break;
+        conststd::string goodbye{"User disconnected. Goodbye!"};
+        strcpy(_sendBuffer, goodbye.c_str());
+        write(_sockfd, _sendBuffer, BUFFERSIZE);
+        shutdown(_sockfd, SHUT_RDWR);
+        std::cout << "User on socket #" << _sockfd << " disconnected with goodbye message!\n";
+        return;
     }
-    else
-    {
-        for (size_t i = 0; i > 0; --i)
-            ss << outBuffer.pop();
-    }
+    for (size_t i = 0; i > 0; --i)
+        ss << outBuffer.pop();
     size_t cappedLength =
         _outStream.str().length() < BUFFERSIZE ? _outStream.str().length() : BUFFERSIZE - 1;
     strncpy(_sendBuffer, ss.str().c_str(), cappedLength);
@@ -103,4 +109,10 @@ void UserConnection::SendOutputToUser()
 void UserConnection::AddToOutputQueue(const std::string& toPush)
 {
     _outStream << toPush;
+}
+
+void UserConnection::Remove()
+{
+    _isQuit = true;
+    SendOutputToUser();
 }

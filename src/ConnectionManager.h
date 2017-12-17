@@ -1,20 +1,14 @@
 #ifndef CONNECTIONMANAGER_H
 #define CONNECTIONMANAGER_H
 
-/* Header file for Connection Manager
-This is like a ThreadPool for managing the UserConnections and the runSending and
-runListening threads.
-*/
-
 #include <vector>
-#include <unordered_map>
-#include <thread>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "UserConnection.h"
 #include "Engine.h"
+#include "UserConnection.h"
 
 /*
 CircularBuffer should be an efficient templated FIFO queue with contiguous memory
@@ -28,32 +22,29 @@ If the user attempts to overflow the command buffer, send a signal to Engine to 
 the Player and disconnect the user.
 */
 
-class UserConnection;
-class Engine;
+class ConnectionManager
+{
+public:
+    explicit ConnectionManager(int _port, Engine& _engine);
+    ~ConnectionManager();
+    int GetNumConns();
+    void Run();
+    void RemoveConnection(int _sock);
 
-class ConnectionManager {
-  static constexpr int BACKLOG = 16;
-  static constexpr int MAXUSERS = 64;
-  std::vector<std::thread> userSendThreads;
-  std::vector<std::thread> userReadThreads;
-  // std::vector<UserConnection> userConns;
-  std::unordered_map<int, UserConnection*> userConns;
-  int sockfd;
-  int port;
-  socklen_t socketLen;
-  struct sockaddr_in bindAddress, acceptAddress;
-  Engine& engine;
-  bool isShutdown = false;
-  int numConns = 0;
-  bool addNewConnection(int _sock);
-  ConnectionManager(); // Default constructor should never be called
- public:
-  ConnectionManager(int _port, Engine& _engine);
-  ~ConnectionManager();
-  int getNumConns();
-  void run();
-  void closeSocket();
-  void removeConnection(int _sock);
+private:
+    using UserConn = std::unique_ptr<UserConnection>;
+
+    bool AddNewConnection(int sock);
+
+    static constexpr int BACKLOG = 16;
+    std::vector<UserConn> _userConns;
+    int _sockfd;
+    int _port;
+    socklen_t _socketLen;
+    struct sockaddr_in bindAddress, acceptAddress;
+    Engine& engine;
+    bool _isShutdown = false;
+    int _numConns = 0;
 };
 
 #endif
