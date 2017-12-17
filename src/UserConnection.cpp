@@ -4,8 +4,8 @@ Generalized version:
 There are two threads: runListening and runSending
 runListening will read the socket in a loop, and send the input to the Engine
 by calling Engine->parseInput
-runSending will block waiting on reading its own sendBuffer: the Engine is
-responsible for waking the thread by writing into the sendBuffer and waking
+runSending will block waiting on reading its own _sendBuffer: the Engine is
+responsible for waking the thread by writing into the _sendBuffer and waking
 the runSending thread
 UserConnection needs a pointer to Engine
 
@@ -40,86 +40,67 @@ which allows messages that a Player would see to be sent to the User.
 
 #include "UserConnection.h"
 
-UserConnection::UserConnection(int _socket) :
-  sockfd(_socket) {
-  bzero(readBuffer, BUFFERSIZE);
-  bzero(sendBuffer, BUFFERSIZE);
+UserConnection::UserConnection(int socket) :
+    _sockfd(socket), _listeningThread(&UserConnection::Run, this)
+{
+  bzero(_readBuffer, BUFFERSIZE);
+  bzero(_sendBuffer, BUFFERSIZE);
 }
 
-UserConnection::~UserConnection() {
-  close(sockfd); // Erase from hashmap of UCs means that socket will close in destructor
+UserConnection::~UserConnection()
+{
+    _listeningThread.join();
+    close(_sockfd);
 }
 
-int UserConnection::getSocket() { return sockfd; }
+const std::string UserConnection::PopCommand() { return _cmdQueue.pop(); }
 
-bool UserConnection::enQCommand() {
-  std::string cmd(readBuffer);
-  std::cout << "Enqueueing cmd into cmdBuffer: " << cmd;
-  // To parse multiple line input by users, you should split the string by newline
-  // Then insert each line separately into the cmdBuffer
-  return cmdBuffer.push(cmd);
-}
-std::string UserConnection::deQCommand() { return cmdBuffer.pop(); }
-
-void UserConnection::runListening() {
-  std::cout << "runListening thread started for socket: " << sockfd << "\n";
-  int retFromReadSocket;
-  while (!isQuit) {
-    bzero(readBuffer, BUFFERSIZE);
-    std::cout << "UC::runListening block waiting on socket\n";
-    retFromReadSocket = read(sockfd, readBuffer, BUFFERSIZE - 1);
-    if (retFromReadSocket < 0) {
-      std::cout << "runListening thread got a bad return value from read()\n"; break;
-    }
-    if (!enQCommand()) {
-      std::cout << "enQCommand() returned false, buffer full. Kick user out.\n";
-      isQuit = true;
-      
-    }
-  }
-  std::cout << "Thread UC::runListening() has ended.\n";
-}
-
-void UserConnection::runSending() {
-  std::cout << "runSending thread started for socket: " << getSocket() << "\n";
-  int retFromWriteSocket;
-  while (!isQuit) {
+void UserConnection::Run()
+{
+    int socketReturn;
+    while (!_isQuit)
     {
-      std::unique_lock<std::mutex> lock1(mutexSend);
-      std::cout << "Locked waiting on the send mutex\n";
-      condvarSend.wait(lock1);
-      std::cout << "Woke and unlocked waiting on the send mutex\n";
-      loadSendBuffer();
+        socketReturn = read(_sockfd, _readBuffer, BUFFERSIZE - 1); // blocks here
+        if (retFromReadSocket < 0)
+        {
+            std::cout << "Socket read failed. Kill user connection.\n";
+            _isQuit = true;
+        }
+        if (!_cmdQueue.push(std::string{_readBuffer}))
+        {
+            std::cout << "User's command buffer is full. Kill user connection.\n";
+            _isQuit = true;
+        }
+        bzero(_readBuffer, BUFFERSIZE);
     }
-    retFromWriteSocket = write(sockfd, sendBuffer, BUFFERSIZE);
-    if (retFromWriteSocket < 0) {
-      std::cout << "runSending thread got a bad return value from write()\n"; break;
-    }
-  }
-  std::cout << "Thread UC::runSending() has ended.\n";
 }
 
-bool UserConnection::pushSendQ(std::string _toPush) {
-  std::cout << "UC::pushSendQ with string: " << _toPush;
-  return outBuffer.push(_toPush);
-}
-
-void UserConnection::notifySendThread() {
-  condvarSend.notify_all();
-}
-
-void UserConnection::loadSendBuffer() {
-  int numSends = outBuffer.getNumel();
-  bzero(sendBuffer, BUFFERSIZE);
-  std::stringstream ss;
-  if (isQuit) {
-    ss << "Goodbye! See you again soon.\n";
-  } else {
-    for (int i = numSends; i > 0; --i) {
-      ss << outBuffer.pop();
+// SendOutputToUser will empty the output queue and write to socket
+void UserConnection::SendOutputToUser()
+{
+    if (_isQuit)
+    {
+        ss << "User disconnected. Goodbye!";
+        break;
     }
-  }
-  // Now the Engine should ensure that you never overflow the output buffer.
-  // So I do not explicitly check it here! Programmer beware.
-  strcpy(sendBuffer, ss.str().c_str());
+    else
+    {
+        for (size_t i = 0; i > 0; --i)
+            ss << outBuffer.pop();
+    }
+    size_t cappedLength =
+        _outStream.str().length() < BUFFERSIZE ? _outStream.str().length() : BUFFERSIZE - 1;
+    strncpy(_sendBuffer, ss.str().c_str(), cappedLength);
+    socketReturn = write(_sockfd, _sendBuffer, BUFFERSIZE);
+    if (socketReturn < 0)
+    {
+        std::cout << "Socket write failed. Kill user connection.\n";
+        _isQuit = true;
+    }
+    bzero(_sendBuffer, BUFFERSIZE);
+}
+
+void UserConnection::AddToOutputQueue(const std::string& toPush)
+{
+    _outStream << toPush;
 }
