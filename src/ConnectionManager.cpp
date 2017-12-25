@@ -60,7 +60,8 @@ bool ConnectionManager::RemoveConnection(int _sock)
     return true;
 }
 
-void ConnectionManager::Run() {
+void ConnectionManager::Run()
+{
     int newSockFD;
     while (!isShutdown)
     {

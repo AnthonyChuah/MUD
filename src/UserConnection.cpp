@@ -44,8 +44,8 @@ which allows messages that a Player would see to be sent to the User.
 UserConnection::UserConnection(int socket) :
     _sockfd(socket), _listeningThread(&UserConnection::Run, this)
 {
-  bzero(_readBuffer, BUFFERSIZE);
-  bzero(_sendBuffer, BUFFERSIZE);
+    bzero(_readBuffer, BUFFERSIZE);
+    bzero(_sendBuffer, BUFFERSIZE);
 }
 
 UserConnection::~UserConnection()
